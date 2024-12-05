@@ -1,68 +1,44 @@
-﻿using Day05;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics;
-Stopwatch sw = Stopwatch.StartNew();
+
 var lines = File.ReadAllLines("input.txt");
-(int sumpart1, int sumpart2) = (0, 0);
-bool process_rules = true;
-Dictionary<int, List<int>> rules = [];
-List<int[]> updates = [];
-foreach (var line in lines)
+var rulelist = lines.TakeWhile(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Split('|').Select(int.Parse));
+var pagelist = lines.SkipWhile(x => !string.IsNullOrWhiteSpace(x)).Skip(1).Select(x => x.Split(',').Select(int.Parse));
+HashSet<(int, int)> rules = [];
+foreach (var line in rulelist)
 {
-    if (string.IsNullOrWhiteSpace(line))
-    {
-        process_rules = false;
-        continue;
-    }
-    if (process_rules)
-    {
-        var l = line.Split("|").Select(int.Parse);
-        (int before, int after) = (l.First(), l.Last());
-        addRule(rules, before, after);
-    }
-    else
-    {
-        var pages = line.Split(",").Select(int.Parse).ToList();
-        if (line_is_valid(rules, pages))
-        {
-            var half = pages.ElementAt(pages.Count / 2);
-            sumpart1 += half;
-        }
-        else
-        {
-            var list = pages.Permutate().AsParallel().First(x => line_is_valid(rules, x)).ToList();
-           // var list = pages.Permutate().First(x => line_is_valid(rules, x)).ToList();
-            var half = list.ElementAt(list.Count / 2);
-            sumpart2 += half;
-        }
-    }
+    rules.Add((line.First(), line.Last()));
 }
+var comp = new MyComparer(rules);
+(ConcurrentBag<int> part1, ConcurrentBag<int> part2) = ([], []);
+Stopwatch sw = Stopwatch.StartNew();
+Parallel.ForEach(pagelist, pages =>
+{
+    var sorted = pages.OrderBy(x => x, comp);
+    if (pages.SequenceEqual(sorted))
+        part1.Add(halfway(sorted));
+    else
+        part2.Add(halfway(sorted));
+    static int halfway(IEnumerable<int> pages)
+    {
+        return pages.ElementAt(pages.Count() / 2);
+    }
+});
+
 sw.Stop();
-Console.WriteLine("Part 1: " + sumpart1);
-Console.WriteLine("Part 2: " + sumpart2);
+Console.WriteLine("Part 1: " + part1.Sum());
+Console.WriteLine("Part 2: " + part2.Sum());
 Console.WriteLine(sw.Elapsed);
-static void addRule(Dictionary<int, List<int>> rules, int before, int after)
+
+class MyComparer(HashSet<(int i, int j)> rules) : IComparer<int>
 {
-    if (rules.TryGetValue(before, out var dval))
+    public int Compare(int x, int y)
     {
-        dval.Add(after);
-        rules[before] = dval;
+        if (rules.Contains((x, y)))
+            return -1;
+        if (rules.Contains((y, x)))
+            return 1;
+        else
+            return 0;
     }
-    else
-        rules[before] = [after];
-
 }
-
-static bool line_is_valid(Dictionary<int, List<int>> before_afters, IEnumerable<int> pages)
-{
-    List<int> previous = [];
-    foreach (var page in pages)
-    {
-        before_afters.TryGetValue(page, out var befores);
-        if (befores != null && previous.Any(befores.Contains))
-            return false;
-        previous.Add(page);
-    }
-    return true;
-}
-
-
