@@ -57,7 +57,7 @@ while (true)
     }
     else
     {
-        grid[cpos] = 'X';
+        grid[cpos] = 'X'; // Elvis has left the building
     }
 }
 Console.WriteLine("Part 1: " + grid.Where(x => x.Value == 'X').Sum(x => 1));
@@ -65,7 +65,7 @@ Console.WriteLine("Part 1 after " + sw.Elapsed);
 // part 2
 grid[origin.Key] = origin.Value;
 var possibles = grid.Where(x => x.Value != '.');
-ConcurrentBag<int> part2bag = new();
+ConcurrentBag<int> part2bag = [];
 Parallel.ForEach(possibles, pos =>
 {
     var gridcopy = grid.ToDictionary(entry => entry.Key, entry => entry.Value);
@@ -79,19 +79,19 @@ Parallel.ForEach(possibles, pos =>
             var curr = gridcopy.Where(x => guard.Contains(x.Value)).FirstOrDefault();
             if (curr.Value == '\0')
                 break;
-            (var currpos, var currval) = (curr.Key, curr.Value);
-            (int x, int y) nextpos = curr.Value switch
+            (var cpos, var cval) = (curr.Key, curr.Value);
+            (int x, int y) npos = curr.Value switch
             {
                 '^' => ((curr.Key.x - 1), (curr.Key.y)),
                 'v' => ((curr.Key.x + 1), (curr.Key.y)),
                 '<' => ((curr.Key.x), (curr.Key.y - 1)),
                 _ => ((curr.Key.x), (curr.Key.y + 1)), // '>'        
             };
-            if (gridcopy.TryGetValue(nextpos, out char nextval))
+            if (gridcopy.TryGetValue(npos, out char nval))
             {
-                if (nextval == '#')
+                if (nval == '#')
                 {
-                    gridcopy[currpos] = curr.Value switch
+                    gridcopy[cpos] = curr.Value switch
                     {
                         '^' => '>',
                         '>' => 'v',
@@ -101,15 +101,15 @@ Parallel.ForEach(possibles, pos =>
                 }
                 else
                 {
-                    if (steps.Contains((currpos, currval)))
+                    if (steps.Contains((cpos, cval)))
                     {
                         part2bag.Add(1);
                         break;
                     }
                     else
-                        steps.Add((currpos, currval));
-                    gridcopy[nextpos] = currval;
-                    gridcopy[currpos] = '.';
+                        steps.Add((cpos, cval));
+                    gridcopy[npos] = cval;
+                    gridcopy[cpos] = '.';
                 }
             }
             else
