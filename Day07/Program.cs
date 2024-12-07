@@ -11,7 +11,7 @@ ConcurrentBag<long> p2 = [];
 Parallel.ForEach(lines, line =>
 {
     var expected = long.Parse(line[0]);
-    var numbers = line[1].Trim().Split(' ').Select(long.Parse).Reverse();
+    var numbers = line[1].Trim().Split(' ').Select(long.Parse).Reverse().ToArray();
     if (Generatesolutions(numbers, [a, m]).Any(x => x == expected))
         p1.Add(expected);
     else if (Generatesolutions(numbers, [a, m, c]).Any(x => x == expected))
@@ -22,14 +22,14 @@ sumpart2 = sumpart1 + p2.Sum();
 Console.WriteLine("Part 1: " + sumpart1);
 Console.WriteLine("Part 2: " + sumpart2);
 Console.WriteLine("Time:   " + sw.Elapsed);
-static IEnumerable<long> Generatesolutions(IEnumerable<long> numbers, IEnumerable<Func<long, long, long>> funcs)
+static IEnumerable<long> Generatesolutions(long[] numbers, IEnumerable<Func<long, long, long>> funcs)
 {
-    if (numbers.Count() == 1)
+    if (numbers.Length == 1)
     {
-	yield return numbers.First();
+	yield return numbers[0];
 	yield break;
     }
-     foreach (var op in funcs)
-        foreach (var num in Generatesolutions(numbers.Skip(1), funcs))
-            yield return op(num, numbers.First());
+    foreach (var op in funcs)
+	foreach (var num in Generatesolutions(numbers[1..], funcs))
+            yield return op(num, numbers[0]);
 }
