@@ -4,7 +4,12 @@ var lines = File.ReadAllLines("input.txt").Select(x => x.Split(':'));
 (long sumpart1, long sumpart2) = (0, 0);
 long a(long x, long y) => x + y;
 long m(long x, long y) => x * y;
-long c(long x, long y) => long.Parse($"{x}{y}");
+Func<long,long,long> c = (x, y) => {
+    for (var z = y; z > 0; z /= 10)
+	x *= 10;
+    return x + y;
+};
+
 Stopwatch sw = Stopwatch.StartNew();
 ConcurrentBag<long> p1 = [];
 ConcurrentBag<long> p2 = [];
