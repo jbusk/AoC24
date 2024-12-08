@@ -13,8 +13,7 @@ foreach (var pos in grid)
     {
 	if (getAnte(out (int x, int y) ante, pos.Key, antenna.Key, maxpos))
 	    part1.Add(ante);
-        foreach (var node in getResonance(pos.Key, antenna.Key, maxpos))
-	    part2.Add(node);
+        part2.UnionWith(getResonance(pos.Key, antenna.Key, maxpos));
     }
 }
 sw.Stop();
@@ -41,7 +40,7 @@ static bool getAnte(out (int x, int y) val, (int x, int y) me, (int x, int y) th
     return inRange(val, max);
 }
 
-static IEnumerable<(int x, int y)> getResonance((int x, int y) me, (int x, int y) them, int max)
+static HashSet<(int x, int y)> getResonance((int x, int y) me, (int x, int y) them, int max)
 {
     HashSet<(int x, int y)> retval = [];
     var diff = calculateDiff(me, them);
