@@ -2,29 +2,31 @@
 Stopwatch sw = Stopwatch.StartNew();
 var lines = File.ReadAllLines("input.txt");
 int maxpos = lines.Length;
-Dictionary<(int x, int y), Position> grid = [];
+Dictionary<(int x, int y), char> grid = [];
 for (int x = 0; x < lines.Length; x++)
     for (int y = 0; y < lines[x].Length; y++)
-        grid[(x, y)] = new Position(lines[x][y]);
-
-foreach (var pos in grid.Where(x => x.Value.Value != '.'))
+        grid[(x, y)] = lines[x][y];
+(HashSet<(int x, int y)> part1, HashSet<(int x, int y)> part2) = ([], []);
+foreach (var pos in grid.Where(x => x.Value != '.'))
 {
-    var other_antennas = grid.Where(x => x.Key != pos.Key && x.Value.Value == pos.Value.Value);
+    var other_antennas = grid.Where(x => x.Key != pos.Key && x.Value == pos.Value);
     foreach (var antenna in other_antennas)
     {
         var anteposition = getAnteposition(pos.Key, antenna.Key);
         var resonances = getAllResonancePositions(pos.Key, antenna.Key, maxpos);
-        if (grid.TryGetValue(anteposition, out Position? antegrid) && antegrid is not null)
-            antegrid.Antinode = true;
+	if (inRange(anteposition, maxpos))
+	    part1.Add(anteposition);
         foreach (var resonance in resonances)
-            if (grid.TryGetValue(resonance, out antegrid) && antegrid is not null)
-                antegrid.Resonance = true;
+            if (grid.ContainsKey(resonance)) 
+		part2.Add(resonance);
     }
 }
 sw.Stop();
-Console.WriteLine("Part 1: " + grid.Count(x => x.Value.Antinode));
-Console.WriteLine("Part 2: " + grid.Count(x => x.Value.Resonance));
+Console.WriteLine("Part 1: " + part1.Count);
+Console.WriteLine("Part 2: " + part2.Count);
 Console.WriteLine("Total time: " + sw.Elapsed);
+
+static bool inRange((int x, int y) pos, int max) => (pos.x < max && pos.y < max && pos.x >= 0 && pos.y >= 0);
 
 static (int x, int y) getAnteposition((int x, int y) me, (int x, int y) them)
 {
@@ -47,17 +49,10 @@ static IEnumerable<(int x, int y)> getAllResonancePositions((int x, int y) me, (
         xdiff = -1 * xdiff;
     if (them.y > me.y)
         ydiff = -1 * ydiff;
-    while (me.x < max && me.y < max && me.x >= 0 && me.y >= 0)
+    while (inRange(me, max))
     {
         me = (me.x + xdiff, me.y + ydiff);
         retval.Add(me);
     }
     return retval;
-}
-
-public class Position(char value)
-{
-    public char Value { get; set; } = value;
-    public bool Antinode { get; set; }
-    public bool Resonance { get; set; }
 }
