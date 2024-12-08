@@ -7,7 +7,7 @@ for (int x = 0; x < lines.Length; x++)
     for (int y = 0; y < lines[x].Length; y++)
         grid[(x, y)] = new Position(lines[x][y]);
 
-foreach (var pos in grid.Where(x => x.Value.Antenna))
+foreach (var pos in grid.Where(x => x.Value.Value != '.'))
 {
     var other_antennas = grid.Where(x => x.Key != pos.Key && x.Value.Value == pos.Value.Value);
     foreach (var antenna in other_antennas)
@@ -60,5 +60,4 @@ public class Position(char value)
     public char Value { get; set; } = value;
     public bool Antinode { get; set; }
     public bool Resonance { get; set; }
-    public bool Antenna => (Value != '.');
 }
