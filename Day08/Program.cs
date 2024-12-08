@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 Stopwatch sw = Stopwatch.StartNew();
 var lines = File.ReadAllLines("input.txt");
-(int sumpart1, int sumpart2, int maxpos) = (0, 0, lines.Length);
+int maxpos = lines.Length;
 Dictionary<(int x, int y), Position> grid = [];
 for (int x = 0; x < lines.Length; x++)
     for (int y = 0; y < lines[x].Length; y++)
@@ -47,11 +47,9 @@ static IEnumerable<(int x, int y)> getAllResonancePositions((int x, int y) me, (
         xdiff = -1 * xdiff;
     if (them.y > me.y)
         ydiff = -1 * ydiff;
-    while (true)
+    while (me.x < max && me.y < max && me.x >= 0 && me.y >= 0)
     {
         me = (me.x + xdiff, me.y + ydiff);
-        if (me.x > max || me.y > max || me.x < 0 || me.y < 0)
-            break;
         retval.Add(me);
     }
     return retval;
