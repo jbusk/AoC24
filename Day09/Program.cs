@@ -1,18 +1,18 @@
 ﻿using System.Diagnostics;
 Stopwatch sw = Stopwatch.StartNew();
-var line = File.ReadAllText("sample.txt");
+var line = File.ReadAllText("input.txt");
 (long sumpart1, long sumpart2) = (0, 0);
 
 bool file = true;
-long filecounter = 0;
-List<(long value, bool empty)> disklist = [];
-List<(long value, bool empty, int length, bool moved)> disklist2 = [];
+int filecounter = 0;
+List<(int value, bool empty)> disklist = [];
+List<(int value, bool empty, int length)> disklist2 = [];
 for (int i = 0; i < line.Length; i++)
 {
     int sectorlength = line[i] & 15;
     if (file)
     {
-        disklist2.Add((filecounter, false, sectorlength, false));
+        disklist2.Add((filecounter, false, sectorlength));
         for (int x = 0; x < sectorlength; x++)
         {
             disklist.Add((filecounter, false));
@@ -22,7 +22,7 @@ for (int i = 0; i < line.Length; i++)
     }
     else
     {
-        disklist2.Add((0, true, sectorlength, false));
+        disklist2.Add((0, true, sectorlength));
         for (int x = 0; x < sectorlength; x++)
         {
             disklist.Add((0, true));
@@ -32,8 +32,6 @@ for (int i = 0; i < line.Length; i++)
 }
 
 var disk1 = disklist.ToArray();
-
-visualise(disk1);
 
 int backwards = disk1.Length - 1;
 // part 1
@@ -49,55 +47,61 @@ for (int i = 0; i < disk1.Length; i++)
     (disk1[i], disk1[backwards]) = (disk1[backwards], disk1[i]);
 }
 
-visualise(disk1);
 
 for (int i = 0; i < disk1.Length; ++i)
 {
     sumpart1 += i * disk1[i].value;
 }
 
+// part 2
+List<(long value, bool empty, int length)> p2list = [];
 
-List<(long value, bool empty)> list2 = [];
-for (int i = 0; i < disklist2.Count; ++i)
+while (true)
 {
-    var sector = disklist2[i];
-    var length = sector.length;
-    if (!sector.empty)
+    var curr = disklist2.First();
+    if (!curr.empty)
     {
-        for (int j = 0; j < sector.length; ++j)
-            list2.Add((sector.value, false));
+        p2list.Add(curr);
+        disklist2.Remove(curr);
     }
-    else
+    else // curr is empty
     {
+        int length = curr.length;
         while (length > 0)
         {
-            // find an un-moved file of length <= this free space's length from the end of disklist2
-            var filelist = disklist2.Where(x => !x.moved && !x.empty && x.length <= sector.length);
-            if (filelist.Count() != 0)
-            {
-                var fil = filelist.LastOrDefault();
-                for (int j = 0; j < sector.length; j++)
-                {
-                    list2.Add((fil.value, false));
-                }
-                length -= fil.length;
-                fil.moved = true;
-            }
-            else
-            {
-                for (int j = 0; j < length; j++)
-                {
-                    list2.Add((0, true));
-                    length--;
-                }
-            }
+            var last_matches = disklist2.Where(x => !x.empty && x.length <= length);
+            if (last_matches.Count() == 0)
+                break;
+            var last_match = last_matches.Last();
+            length -= last_match.length;
+            p2list.Add(last_match);
+            var last_idx = disklist2.IndexOf(last_match);
+            disklist2[last_idx] = (0, true, last_match.length);
+            disklist2.Remove(last_match);
+            
         }
+        if (length > 0)
+        {
+            p2list.Add((0, true, length));
+        }
+        disklist2.Remove(curr);
     }
-
+    if (disklist2.Count == 0)
+        break;
 }
-var disk2 = list2.ToArray();
-visualise(disk2);
-for (int i = 0; i < disk2.Length; ++i)
+
+
+
+List<(long value, bool empty)> disk2 = [];
+foreach (var sektor in p2list)
+{
+    for (int i = 0; i < sektor.length; i++)
+    {
+        disk2.Add((sektor.value, sektor.empty));
+    }
+}
+
+for (int i = 0; i < disk2.Count; ++i)
 {
     sumpart2 += i * disk2[i].value;
 }
@@ -106,32 +110,3 @@ Console.WriteLine("Part 1: " + sumpart1);
 Console.WriteLine("Part 2: " + sumpart2);
 Console.WriteLine("Time: " + sw.Elapsed);
 
-static void visualise((long value, bool empty)[] disk)
-{
-    for (int i = 0; i < disk.Length; i++)
-    {
-        if (disk[i].empty)
-            Console.Write(".");
-        else
-            Console.Write(disk[i].value);
-    }
-    Console.WriteLine();
-}
-
-class Sector
-{
-    public Sector(long value, bool empty = false)
-    {
-        Value = value;
-        Empty = empty;
-    }
-    public long Value { get; set; }
-    public bool Empty { get; set; }
-
-    public override string ToString()
-    {
-        if (Empty)
-            return ".";
-        return Value.ToString();
-    }
-}
