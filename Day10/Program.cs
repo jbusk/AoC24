@@ -25,7 +25,7 @@ Console.WriteLine("Part 1: " + sumpart1);
 Console.WriteLine("Part 2: " + sumpart2);
 Console.WriteLine("Time: " + sw.Elapsed);
 
-IEnumerable<(int x, int y)> neighbours(Position pos, int max)
+IEnumerable<Position> neighbours(Position pos, int max)
 {
     Position[] rel_pos = [(0, 1), (1, 0), (0, -1), (-1, 0)];
     foreach (var rel in rel_pos)
