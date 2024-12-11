@@ -23,8 +23,8 @@ static Dictionary<string, long> blink(Dictionary<string, long> dict)
         }
         else if (item.Key.Length % 2 == 0)
         {
-            add(ret, item.Key[(item.Key.Length / 2)..], item.Value);
-            add(ret, item.Key[..(item.Key.Length / 2)], item.Value);
+            add(ret, long.Parse(item.Key[(item.Key.Length / 2)..]).ToString(), item.Value);
+            add(ret, long.Parse(item.Key[..(item.Key.Length / 2)]).ToString(), item.Value);
         }
         else
         {
@@ -34,7 +34,6 @@ static Dictionary<string, long> blink(Dictionary<string, long> dict)
     return ret;
     static void add(Dictionary<string, long> d, string k, long v)
     {
-        k = long.Parse(k).ToString();
         if (d.TryGetValue(k, out long value))
             d[k] = value + v;
         else
