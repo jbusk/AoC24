@@ -1,6 +1,6 @@
 ﻿using Position = (int x, int y);
 (int sumpart1, int sumpart2) = (0, 0);
-var lines = File.ReadAllLines("sample-1.txt");
+var lines = File.ReadAllLines("sample.txt");
 Dictionary<Position, char> grid = [];
 HashSet<Position> visited = [];
 int max = lines.Length; // The grids axis are equal
@@ -70,38 +70,158 @@ static (int area, int perimeter) explorePlot2(Position pos, char value, HashSet<
 
 static int countCorners(Dictionary<Position, char> grid, int max, HashSet<Position> current)
 {
-    // if there is only one position in the plot, there are 4 corners
+    //  OOO
+    //  OXO   = 4 region om 1 element, så vi returnerar 4 direkt
+    //  OOO
     if (current.Count == 1)
         return 4;
     int count = 0;
+
     foreach (var pos in current)
     {
-        var curr = getVal(grid, pos, max);
-        var n = getAllNeighbours(pos);
-
-        if (gv(n.lt) == curr && gv(n.rt) == curr && (curr != gv(n.up) || curr != gv(n.dn)))
-            continue;
-        if (gv(n.up) == curr && gv(n.dn) == curr && (curr != gv(n.lt) || curr != gv(n.rt)))
-            continue;
-        // check if one immediate neighbour
-        if ((curr == gv(n.up) && curr != gv(n.dn) && curr != gv(n.lt) && curr != gv(n.rt)) ||
-            (curr == gv(n.dn) && curr != gv(n.up) && curr != gv(n.lt) && curr != gv(n.rt)) ||
-            (curr == gv(n.lt) && curr != gv(n.dn) && curr != gv(n.up) && curr != gv(n.rt)) ||
-            (curr == gv(n.rt) && curr != gv(n.dn) && curr != gv(n.lt) && curr != gv(n.up)))
+        var c = gv(pos);
+        var (up, dn, lt, rt, ul, ur, dl, dr) = getAllNeighbours(pos);
+        //  OOO
+        //  OXO   = 2 x+- y- olika mot c
+        //  OXO
+        if (gv(dn) == c && gv(up) != c && gv(lt) != c && gv(rt) != c)
         {
-            count += 3;
+            count += 2;
             continue;
         }
-        // check if two immediate neighbours
-        if (curr == gv(n.up) && curr == gv(n.lt))  // potential L // ⅃ // ⅂ // Γ
-            if (curr != gv(n.ul))
-            {
-                count += 1;
-                continue;
-            }
+        //  OOO
+        //  XXO   = 2 x- och y+- olika mot c
+        //  OOO
+        if (gv(lt) == c && gv(up) != c && gv(up) != c && gv(rt) != c)
+        {
+            count += 2;
+            continue;
+        }
+        //  OXO
+        //  OXO   = 2 x+- och y+ olika mot c
+        //  OOO
+        if (gv(up) == c && gv(dn) != c && gv(lt) != c && gv(rt) != c)
+        {
+            count += 2;
+            continue;
+        }
+        //  OOO
+        //  OXX   = 2 x- och y+- olika mot c
+        //  OOO
+        if (gv(rt) == c && gv(dn) != c && gv(lt) != c && gv(up) != c)
+        {
+            count += 2;
+            continue;
+        }
+        //  OXO
+        //  OXO   = 0 y+- samma som c, x+- inte samma som c
+        //  OXO
+        if (gv(up) == c && gv(dn) == c && gv(lt) != c && gv(rt) != c)
+            continue;
+        //  OOO
+        //  XXX   = 0 x+- samma som c, y+- inte samma
+        //  OOO
+        if (gv(lt) == c && gv(rt) == c && gv(up) != c && gv(dn) != c)
+            continue;
+        //  OOO
+        //  XXO   = 2 x- och y+ samma som c, x+ och y- inte samma, x-y+ inte samma (om samma = 1 )
+        //  ¤XO
+        if (gv(lt) == c && gv(dn) == c && gv(up) != c && gv(rt) != c)
+        {
+            count++;
+            if (gv(dl) != c)
+                count++;
+            continue;
+        }
+        //  ¤XO
+        //  XXO   = 2 x- och y- samma som c, x+ och y+ inte samma, x-y- inte samma (om samma = 1 )
+        //  OOO
+        if (gv(lt) == c && gv(up) == c && gv(dn) != c && gv(rt) != c)
+        {
+            count++;
+            if (gv(ul) != c)
+                count++;
+            continue;
+        }
+        //  OOO
+        //  OXX   = 2 x+ och y+ samma som c, x- och y- inte samma, x+y+ inte samma (om samma = 1 )
+        //  OX¤
+        if (gv(lt) == c && gv(rt) == c && gv(up) != c && gv(up) != c)
+        {
+            count++;
+            if (gv(dr) != c)
+                count++;
+            continue;
+        }
+        //  OX¤
+        //  OXX   = 2 x+ och y- samma som c, x- och y+ inte samma, x+y- inte samma (om samma = 1 )
+        //  OOO
+        if (gv(rt) == c && gv(up) == c && gv(lt) != c && gv(dn) != c)
+        {
+            count++;
+            if (gv(ur) != c)
+                count++;
+            continue;
+        }
+        //  OX¤
+        //  OXX   = 2 x+ y+- samma som c, x- inte samma, x+y- och x+y+ inte samma (en mindre per icke samma)
+        //  OX¤
+        if (gv(rt) == c && gv(up) == c && gv(dn) == c && gv(rt) != c)
+        {
+            if (gv(ur) != c)
+                count++;
+            if (gv(dr) != c)
+                count++;
+            continue;
+        }
 
-        // L
-        // +
+        //  ¤XO
+        //  XXO   = 2 x- y+- samma som c, x- inte samma, x-y- och x-y+ inte samma (en mindre per icke samma)
+        //  ¤XO
+        if (gv(lt) == c && gv(up) == c && gv(dn) == c && gv(rt) != c)
+        {
+            if (gv(ul) != c)
+                count++;
+            if (gv(dl) != c)
+                count++;
+            continue;
+        }
+        //  OOO
+        //  XXX   = 2 y+ x+- samma som c, y- inte samma, x+y+ och x-y+ inte samma (en mindre per icke samma)
+        //  ¤X¤
+        if (gv(lt) == c && gv(rt) == c && gv(dn) == c && gv(up) != c)
+        {
+            if (gv(dr) != c)
+                count++;
+            if (gv(dl) != c)
+                count++;
+            continue;
+        }
+        //  ¤X¤
+        //  XXX   = 2 y- x+- samma som c, y+ inte samma, x-y- och x-y+ inte samma (en mindre per icke samma)
+        //  OOO
+        if (gv(lt) == c && gv(up) == c && gv(rt) == c && gv(dn) != c)
+        {
+            if (gv(ur) != c)
+                count++;
+            if (gv(ul) != c)
+                count++;
+            continue;
+        }
+        //  %X%
+        //  XXX   = 4 x+ och y+ och x- och y- samma som c, x+y+ x-y+ x+y- x-y- inte samma (en mindre per icke samma)
+        //  %X%
+        if (gv(lt) == c && gv(rt) == c && gv(up) == c && gv(dn) == c)
+        {
+            if (gv(dr) != c)
+                count++;
+            if (gv(ur) != c)
+                count++;
+            if (gv(dl) != c)
+                count++;
+            if (gv(ul) != c)
+                count++;
+        }
     }
     return count;
     char gv(Position pos)
