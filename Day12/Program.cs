@@ -70,89 +70,64 @@ static (int area, int perimeter) explorePlot2(Position pos, char value, HashSet<
 
 static int countCorners(Dictionary<Position, char> grid, int max, HashSet<Position> current)
 {
+    // if there is only one position in the plot, there are 4 corners
+    if (current.Count == 1)
+        return 4;
     int count = 0;
     foreach (var pos in current)
     {
-        count += countOuterCorners(grid, pos, max);
-        count += countInnerCorners(grid, pos, max);
-    }
-    return count;
-}
+        var curr = getVal(grid, pos, max);
+        var n = getAllNeighbours(pos);
 
-static int countOuterCorners(Dictionary<Position, char> grid, Position pos, int max)
-{
-    // Example
-    // _O_
-    // OXX
-    // _XX
-    // if pos is the X in the middle, get the positions up and left
-    // then if they both have a different value to our X, it is an outer corner
-    // (also if either/both of those are outside of range)
-    
-    Position[][] corners = [
-        [(-1, 0), (0, -1)],
-        [(-1, 0), (0, 1)],
-        [(1, 0), (0, 1)],
-        [(1, 0), (0, 1)]];
-    int count = 0;
-    var curr = grid[pos];
-    foreach (var pair in corners)
-    {
-        (Position a, Position b) = ((pos.x + pair[0].x, pos.y + pair[0].y), (pos.x + pair[1].x, pos.y + pair[1].y));
-        if (inRange(a, max) && inRange(b, max))
-        {
-            var a_val = grid[a];
-            var b_val = grid[b];
-            if (curr != a_val && curr != b_val)
-                count++;
-        }
-        else if (!inRange(a, max) && inRange(b, max))
-        {
-            if (curr != grid[b])
-                count++;
-        }
-        else if (!inRange(b, max) && inRange(a, max))
-        {
-            if (curr != grid[a])
-                count++;
-        } else // we're at a grid corner
-        {
-            count++;
-        }
-    }
-    return count;
-}
-
-static int countInnerCorners(Dictionary<Position, char> grid, Position pos, int max)
-{
-    // Example
-    // OX_
-    // XX_
-    // ___
-    // if pos is the lower right X, get the positions up and left and diagonally up-left
-    // then if both the up and left positions are X and up-left is not, it is an inner corner
-    // repeat for other diagonals and so on
-    Position[][] corners = [
-        [(-1,0), (0,-1), (-1,-1)], // up, left, upleft
-        [(-1, 0), (0, 1), (-1, 1)], // up, right, upright
-        [(1, 0), (0, -1), (1, -1)], // down, left, downleft
-        [(1, 0), (0, 1), (1,1)]]; // down, right, downright
-    int count = 0;
-    var curr = grid[pos];
-    foreach (var trio in corners)
-    {
-        (Position a, Position b, Position d) = (trio[0], trio[1], trio[2]);
-        if (!inRange(d, max)) // if the diagonal is out of range, this cannot be an inner corner
+        if (gv(n.lt) == curr && gv(n.rt) == curr && (curr != gv(n.up) || curr != gv(n.dn)))
             continue;
-        var diagonal = grid[d];
-        var a_val = grid[a];
-        var b_val = grid[b];
-        if (a_val == curr && b_val == curr && diagonal != curr)
-            count++;
+        if (gv(n.up) == curr && gv(n.dn) == curr && (curr != gv(n.lt) || curr != gv(n.rt)))
+            continue;
+        // check if one immediate neighbour
+        if ((curr == gv(n.up) && curr != gv(n.dn) && curr != gv(n.lt) && curr != gv(n.rt)) ||
+            (curr == gv(n.dn) && curr != gv(n.up) && curr != gv(n.lt) && curr != gv(n.rt)) ||
+            (curr == gv(n.lt) && curr != gv(n.dn) && curr != gv(n.up) && curr != gv(n.rt)) ||
+            (curr == gv(n.rt) && curr != gv(n.dn) && curr != gv(n.lt) && curr != gv(n.up)))
+        {
+            count += 3;
+            continue;
+        }
+        // check if two immediate neighbours
+        if (curr == gv(n.up) && curr == gv(n.lt))  // potential L // ⅃ // ⅂ // Γ
+            if (curr != gv(n.ul))
+            {
+                count += 1;
+                continue;
+            }
+
+        // L
+        // +
     }
     return count;
+    char gv(Position pos)
+    {
+        return getVal(grid, pos, max);
+    }
 }
 
+static char getVal(Dictionary<Position, char> grid, Position pos, int max)
+{
+    if (!inRange(pos, max))
+        return '\0';
+    return grid[pos];
+}
+
+static (Position up, Position dn, Position lt, Position rt, Position ul, Position ur, Position dl, Position dr) getAllNeighbours(Position p)
+{
+    return ((p.x - 1, p.y), // up
+        (p.x + 1, p.y), // down
+        (p.x, p.y - 1), // left
+        (p.x, p.y + 1), //right
+        (p.x - 1, p.y - 1), // up-left
+        (p.x - 1, p.y + 1), // up-right
+        (p.x + 1, p.y - 1), // down-left
+        (p.x + 1, p.y + 1)); // down-right
+}
 
 static IEnumerable<Position> getNeighbours(Position pos)
 {
