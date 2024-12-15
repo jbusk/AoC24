@@ -4,8 +4,11 @@ var lines = File.ReadAllLines("input.txt");
 Dictionary<(int x, int y), List<(int x, int y)>> grid = [];
 (int sumpart1, int sumpart2) = (0, 100);
 var regex = new Regex(@"(-?\d+)");
-foreach (var line in lines)
-    initialPlaceRobot(regex.Matches(line));
+foreach (var line in lines) 
+{
+    var m = regex.Matches(line);
+    placeRobot((int.Parse(m[0].Value), int.Parse(m[1].Value)), (int.Parse(m[2].Value), int.Parse(m[3].Value)), grid);
+}
 // part 1
 for (int i = 0; i < 100; i++)
     grid = moveRobots(grid);
@@ -14,7 +17,7 @@ var q1 = grid.Where(r => r.Key.x < tsize.x / 2 && r.Key.y < tsize.y / 2);
 var q2 = grid.Where(r => r.Key.x > tsize.x / 2 && r.Key.y < tsize.y / 2);
 var q3 = grid.Where(r => r.Key.x < tsize.x / 2 && r.Key.y > tsize.y / 2);
 var q4 = grid.Where(r => r.Key.x > tsize.x / 2 && r.Key.y > tsize.y / 2);
-Console.WriteLine("Part 1: " + q1.Sum(x => x.Value.Count) * q2.Sum(x => x.Value.Count) * q3.Sum(x => x.Value.Count) * q4.Sum(x => x.Value.Count));
+sumpart1 = q1.Sum(x => x.Value.Count) * q2.Sum(x => x.Value.Count) * q3.Sum(x => x.Value.Count) * q4.Sum(x => x.Value.Count);
 
 //Part 2
 while (grid.Any(g => g.Value.Count > 1))
@@ -23,6 +26,7 @@ while (grid.Any(g => g.Value.Count > 1))
     sumpart2++;
 }
 visualise(grid);
+Console.WriteLine("Part 1: " + sumpart1);
 Console.WriteLine("Part 2: " + sumpart2);
 
 Dictionary<(int x, int y), List<(int x, int y)>> moveRobots(Dictionary<(int x, int y), List<(int x, int y)>> grid)
@@ -53,11 +57,4 @@ void placeRobot((int x, int y) pos, (int x, int y) val, Dictionary<(int x, int y
         gridValue.Add(val);
     else
         grid[pos] = [val];
-}
-
-void initialPlaceRobot(MatchCollection m)
-{
-    (int posx, int posy, int valx, int valy) =
-        (int.Parse(m[0].Value), int.Parse(m[1].Value), int.Parse(m[2].Value), int.Parse(m[3].Value));
-    placeRobot((posx, posy), (valx, valy), grid);
 }
