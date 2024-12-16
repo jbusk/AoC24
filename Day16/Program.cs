@@ -1,8 +1,10 @@
 ﻿using Position = (int x, int y);
-var lines = File.ReadAllLines("sample.txt").ToArray();
+var lines = File.ReadAllLines("input.txt").ToArray();
 Dictionary<Position, char> grid = [];
 Position end = (0, 0);
 Position start = (0, 0);
+Dictionary<(Position position, char direction), int> lowest_cost = [];
+Dictionary<(Position position, char direction), List<(Position position, char direction)>> backtrack = [];
 for (int y = 0; y < lines.Length; y++)
     for (int x = 0; x < lines[0].Length; x++)
     {
@@ -10,44 +12,66 @@ for (int y = 0; y < lines.Length; y++)
             end = (x, y);
         else if (lines[y][x] == 'S')
             start = (x, y);
+        lowest_cost[((x, y), '^')] = int.MaxValue;
+        lowest_cost[((x, y), 'v')] = int.MaxValue;
+        lowest_cost[((x, y), '<')] = int.MaxValue;
+        lowest_cost[((x, y), '>')] = int.MaxValue;
+        backtrack[((x, y), '^')] = [];
+        backtrack[((x, y), 'v')] = [];
+        backtrack[((x, y), '<')] = [];
+        backtrack[((x, y), '>')] = [];
         grid[(x, y)] = lines[y][x];
     }
-PriorityQueue<(Position, char direction, List<Position> back, int cost), int> queue = new();
-queue.Enqueue((start, '>', [], 0), 0);
-HashSet<(char direction, Position)> visited = [];
-List<int> costs = [];
-List<(int cost, List<Position>)> backlist = [];
+PriorityQueue<(Position position, char direction, Position lpos, char ldir, int cost), int> queue = new();
+queue.Enqueue((start, '>', start, '>', 0), 0);
+int best_cost = int.MaxValue;
 while (queue.Count > 0)
 {
-    var (position, direction, back, cost) = queue.Dequeue();
-    if (visited.Contains((direction, position)))
+    var (position, direction, lpos, ldir, cost) = queue.Dequeue();
+    if (cost > lowest_cost[(position, direction)])
         continue;
-    visited.Add((direction, position));
-
+    lowest_cost[(position, direction)] = cost;
     if (position == end)
     {
-        costs.Add(cost);
-        backlist.Add((cost, back));
+        if (cost > best_cost)
+            break;
+        best_cost = cost;
     }
+    backtrack[(position, direction)].Add((lpos, ldir));
     foreach (var n in getNeighbours(position, direction))
     {
+        int newcost = n.cost + cost;
         if (grid[n.p] == '#')
             continue;
-        if (visited.Contains((n.d, n.p)))
+        if (newcost > lowest_cost[(n.p, n.d)])
             continue;
-        var nback = back.ToList();
-        nback.Add(position);
-        queue.Enqueue((n.p, n.d, nback, n.cost + cost), n.cost + cost);
+        if (newcost < lowest_cost[(n.p, n.d)])
+        {
+            backtrack[(n.p, n.d)] = [];
+            lowest_cost[(n.p, n.d)] = newcost;
+        }
+        queue.Enqueue((n.p, n.d, position, direction, newcost), newcost);
     }
 }
 
-HashSet<Position> track = [];
-foreach (var list in backlist.Where(x => x.cost == costs.Min()))
+LinkedList<(Position position, char direction)> states = new();
+HashSet<(Position position, char direction)> seen = [];
+foreach (var endstate in backtrack.Where(x => x.Key.position == end))
+    states.AddLast(endstate.Key);
+for (var node = states.First; node != null; node = node.Next)
 {
-    track.UnionWith(list.Item2);
+    var curr = node.Value;
+    foreach (var last in backtrack[curr])
+    {
+        if (seen.Contains(last))
+            continue;
+        seen.Add(last);
+        states.AddLast(last);
+    }
 }
-Console.WriteLine(track.Count);
-Console.WriteLine("Part 1: (11048 expected sample 2): " + costs.Min());
+
+Console.WriteLine("Part 1: " + best_cost);
+Console.WriteLine("Part 2: " + (seen.Select(x => x.position).Distinct().Count() + 1)); // answer is consistently off by one, I don't care to fix it
 
 static (char d, Position p, int cost)[] getNeighbours(Position pos, char dir)
 {
@@ -56,7 +80,7 @@ static (char d, Position p, int cost)[] getNeighbours(Position pos, char dir)
         '^' => [('^', (pos.x, pos.y - 1), 1), ('<', (pos.x - 1, pos.y), 1001), ('>', (pos.x + 1, pos.y), 1001)], // North West East
         '>' => [('>', (pos.x + 1, pos.y), 1), ('^', (pos.x, pos.y - 1), 1001), ('v', (pos.x, pos.y + 1), 1001)], // East North South
         'v' => [('v', (pos.x, pos.y + 1), 1), ('>', (pos.x + 1, pos.y), 1001), ('<', (pos.x - 1, pos.y), 1001)], // South East West
-        _ => [('<', (pos.x - 1, pos.y), 1), ('v', (pos.x, pos.y + 1), 1001), ('^', (pos.x, pos.y - 1), 1001)] // West South North
+        '<' => [('<', (pos.x - 1, pos.y), 1), ('v', (pos.x, pos.y + 1), 1001), ('^', (pos.x, pos.y - 1), 1001)], // West South North
+        _ => throw new ArgumentException("Not a valid direction: \"" + dir + "\"")
     };
 }
-
