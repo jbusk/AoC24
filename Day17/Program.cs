@@ -1,122 +1,100 @@
 ﻿using System.Text.RegularExpressions;
 var lines = File.ReadAllLines("input.txt");
 var regex = new Regex(@"(-?\d+)");
-long a = long.Parse(regex.Matches(lines[0])[0].Value);
-long origA = a;
-long b = long.Parse(regex.Matches(lines[1])[0].Value);
-long origB = b;
-long c = long.Parse(regex.Matches(lines[2])[0].Value);
-long origC = c;
-List<int> program = regex.Matches(lines[4]).Select(x => int.Parse(x.Value)).ToList();
+long r_a = long.Parse(regex.Matches(lines[0])[0].Value);
+long r_b = long.Parse(regex.Matches(lines[1])[0].Value);
+long r_c = long.Parse(regex.Matches(lines[2])[0].Value);
+List<long> program = regex.Matches(lines[4]).Select(x => long.Parse(x.Value)).ToList();
 
-var output = runProgram(program, a, b, c);
+Console.WriteLine("Part 1: " + string.Join(',', runProgram(program, r_a, r_b, r_c)));
 
-Console.WriteLine("sought  " + string.Join(',', program));
-Console.WriteLine("Part 1: " + string.Join(',', output));
+var part2 = findA(program, 0);
+Console.WriteLine("Part 2: " + part2.answer);
 
-//int newA = 0;
-//while (true)
-//{
 
-//    newA++;
-//}
+/* 
+B = A % 8
+B = B ^ 3
+C = A >> B
+B = B ^ 5
+A = A >> 3
+B = B ^ C
+PRINT B % 8
+IF A != 0 LOOP
+ */
+(List<long> list, long answer) findA(List<long> target, long answer)
+{
+    if (target.Count == 0)
+        return ([], answer);
+    for (int i = 0; i < 8; i++)
+    {
+        long a = (answer << 3) | i;
+        long b = a % 8;
+        b ^= 3;
+        long c = a >> (int)b;
+        b ^= 5;
+        a >>= 3;
+        b ^= c;
+        b %= 8;
+        if (b == target.Last())
+        {
+            var next = findA(target.SkipLast(1).ToList(), a);
+            if (next.list.Count == 0)
+                continue;
+            return next;
+        }
+    }
+    return (target, answer);
+}
 
-static List<long> runProgram(List<int> program, long regA, long regB, long regC)
+static List<long> runProgram(List<long> program, long regA, long regB, long regC)
 {
     List<long> output = [];
-    int pc = 0;
+    long pc = 0;
     while (true)
-    {
+    { // combo-op:
+      // 0-3: literal
+      // 4: A 5: B 6: C
         if (pc >= program.Count)
             break;
-        switch (program[pc])
+        long operand = program[(int)pc + 1];
+        switch (program[(int)pc])
         {
-            case 0:
-                inst_adv(program[pc + 1]);
+            case 0: // A =  A >> op 
+                regA = regA >> (int)c_op(operand);
                 break;
-            case 1:
-                inst_bxl(program[pc + 1]);
+            case 1: // B =  B ^ op
+                regB ^= operand;
                 break;
-            case 2:
-                inst_bst(program[pc + 1]);
+            case 2: // B = op % 8 
+                regB = c_op(operand) % 8;
                 break;
-            case 3:
-                inst_jnz(program[pc + 1]);
+            case 3: // !A jump
+                if (regA != 0)
+                {
+                    pc = operand;
+                    continue;
+                }
                 break;
-            case 4:
-                inst_bxc(program[pc + 1]);
+            case 4: // B = B ^ C 
+                regB ^= regC;
                 break;
-            case 5:
-                inst_out(program[pc + 1]);
+            case 5: // op % 8 -> out
+                output.Add(c_op(operand) % 8);
                 break;
-            case 6:
-                inst_bdv(program[pc + 1]);
+            case 6: // B = A >> op 
+                regB = regA / (int)c_op(operand);
                 break;
-            case 7:
-                inst_cdv(program[pc + 1]);
+            case 7: // C = A >> op
+                regC = regA >> (int)c_op(operand);
                 break;
             default:
                 break;
         }
+        pc += 2;
     }
     return output;
-    void inst_adv(int operand) // op 0
-    {
-        var denom = twopow(combo_operand(operand));
-        regA /= denom;
-        pc += 2;
-    }
-
-    void inst_bxl(int operand) // op 1
-    {
-        regB ^= operand;
-        pc += 2;
-    }
-
-    void inst_bst(int operand) // op 2
-    {
-        var op = combo_operand(operand);
-        regB = op % 8;
-        pc += 2;
-    }
-
-    void inst_jnz(int operand) // op 3
-    {
-        if (regA == 0)
-        {
-            pc += 2;
-            return;
-        }
-        pc = operand;
-    }
-
-    void inst_bxc(int operand) // op 4
-    {
-        regB ^= regC;
-        pc += 2;
-    }
-
-    void inst_out(int operand) // op 5
-    {
-        var op = combo_operand(operand);
-        output.Add(op % 8);
-        pc += 2;
-    }
-
-    void inst_bdv(int operand) // op 6
-    {
-        var denom = twopow(combo_operand(operand));
-        regB = regA / denom;
-        pc += 2;
-    }
-
-    void inst_cdv(int operand) // op 7
-    {
-        var denom = twopow(combo_operand(operand));
-        regC = regA / denom;
-        pc += 2;
-    }
-    long combo_operand(long value)
+    long c_op(long value)
     {
         return value switch
         {
@@ -128,9 +106,3 @@ static List<long> runProgram(List<int> program, long regA, long regB, long regC)
         };
     }
 }
-
-static long twopow(long value)
-{
-    return (long)(Math.Pow(2, value));
-}
-
