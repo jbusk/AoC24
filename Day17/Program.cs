@@ -11,7 +11,6 @@ Console.WriteLine("Part 1: " + string.Join(',', runProgram(program, r_a, r_b, r_
 var part2 = findA(program, 0, false);
 Console.WriteLine("Part 2: " + part2.answer);
 
-
 /* 
 B = A % 8
 B = B ^ 3
