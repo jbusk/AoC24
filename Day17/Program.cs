@@ -8,7 +8,7 @@ List<long> program = regex.Matches(lines[4]).Select(x => long.Parse(x.Value)).To
 
 Console.WriteLine("Part 1: " + string.Join(',', runProgram(program, r_a, r_b, r_c)));
 
-var part2 = findA(program, 0, false);
+var part2 = findA(program, 0);
 Console.WriteLine("Part 2: " + part2.answer);
 
 /* 
@@ -21,7 +21,7 @@ B = B ^ C
 PRINT B % 8
 IF A != 0 LOOP
  */
-(List<long> list, long answer, bool failed) findA(List<long> target, long answer, bool failed)
+(List<long> list, long answer, bool failed) findA(List<long> target, long answer)
 {
     if (target.Count == 0)
         return ([], answer, false);
@@ -38,7 +38,7 @@ IF A != 0 LOOP
         b %= 8;
         if (b == target.Last())
         {
-            var next = findA(target.SkipLast(1).ToList(), initial_a, false);
+            var next = findA(target.SkipLast(1).ToList(), initial_a);
             if (next.failed)
                 continue;
             return next;
