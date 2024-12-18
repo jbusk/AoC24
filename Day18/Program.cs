@@ -13,19 +13,21 @@ foreach (var line in lines)
 }
 
 Console.WriteLine("Part 1: " + navigate(grid));
-Position sumpart2 = (0, 0);
 
-for (int i = 1024; i < lines.Count(); i++)
-{
+string part2 = "";
+for (int i = 1024; i < lines.Length; i++)
     grid.Add((lines[i][0], lines[i][1]));
+foreach (var line in lines.Reverse())
+{
+    grid.Remove((line[0], line[1]));
     int ret = navigate(grid);
-    if (ret == int.MaxValue)
+    if (ret != int.MaxValue)
     {
-        sumpart2 = (lines[i][0], lines[i][1]);
+        part2 = $"{line[0]},{line[1]}";
         break;
     }
 }
-Console.WriteLine($"Part 2: {sumpart2.x},{sumpart2.y}");
+Console.WriteLine($"Part 2: " + part2);
 
 int navigate(HashSet<Position> grid)
 {
@@ -43,9 +45,7 @@ int navigate(HashSet<Position> grid)
             if (grid.Contains(n))
                 continue;
             if (n == end)
-            {
                 return node.Value.cost + 1;
-            }
             seen.Add(n);
             list.AddLast((n, node.Value.cost + 1));
         }
@@ -56,9 +56,9 @@ int navigate(HashSet<Position> grid)
 IEnumerable<Position> neighbours(Position pos)
 {
     Position[] rel_pos = [(0, 1), (1, 0), (0, -1), (-1, 0)];
-    foreach (var rel in rel_pos)
+    foreach (var (x, y) in rel_pos)
     {
-        var new_pos = (pos.x + rel.x, pos.y + rel.y);
+        var new_pos = (pos.x + x, pos.y + y);
         if (inRange(new_pos))
             yield return new_pos;
     }
