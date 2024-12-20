@@ -1,49 +1,44 @@
 ﻿using Position = (int x, int y);
 var lines = File.ReadAllLines("input.txt");
 (int sumpart1, int sumpart2, int max) = (0, 0, lines.Length);
-
-HashSet<Position> grid = [];
+HashSet<Position> obstacles = [];
 (Position start, Position end) = ((0, 0), (0, 0));
 for (int y = 0; y < max; y++)
     for (int x = 0; x < max; x++)
     {
         if (lines[y][x] == '#')
-            grid.Add((x, y));
+            obstacles.Add((x, y));
         else if (lines[y][x] == 'S')
             start = ((x, y));
         else if (lines[y][x] == 'E')
             end = ((x, y));
-
     }
-
-// 1. run the course to get the initial distance, save positions of all touched walls
-int initial_distance = navigate(grid, start, end);
-Console.WriteLine("Initial distance: " + initial_distance);
+int initial_distance = navigate(obstacles, start, end, out var walkable);
 int aim_for = initial_distance - 100;
-// 2. for each wall, remove it and run the course again, seeing how much time was saved
-foreach (Position position in grid)
+walkable[end] = initial_distance;
+
+Parallel.ForEach(walkable, cheat_start =>
 {
-    var ngrid = grid.ToHashSet();
-    ngrid.Remove(position);
-    var ndist = navigate(ngrid, start, end);
-    if (ndist <= aim_for)
-        sumpart1++;
-}
+    foreach (var cheat_end in allwithinmanhattan(cheat_start.Key, 20))
+    {
+        int mdist = manhattan(cheat_end, cheat_start.Key);
+        if (!walkable.TryGetValue(cheat_end, out var cheat_end_cost))
+            continue;
+        int cost = (initial_distance - cheat_end_cost) + mdist + cheat_start.Value;
+        if (cost <= aim_for)
+        {
+            if (mdist == 2)
+                Interlocked.Increment(ref sumpart1);
+            Interlocked.Increment(ref sumpart2);
+        }
+    }
+});
 Console.WriteLine("Part 1: " + sumpart1);
-Dictionary<(Position cstart, Position cend), int> cheats = [];
-// 3. for each wall, remove it and run the navigate2 , seeing how much time was saved
-
-for (int i = 0; i < aim_for; i++)
-{
-    var ndist = navigate2(grid, start, end, i, out var cstart, out var cend);
-    cheats[(cstart, cend)] = ndist;
-}
-
-sumpart2 = cheats.Count(x => x.Value <= aim_for);
-
 Console.WriteLine("Part 2: " + sumpart2);
-int navigate(HashSet<Position> grid, Position start, Position end)
+
+int navigate(HashSet<Position> obstacles, Position start, Position end, out Dictionary<Position, int> cost)
 {
+    cost = [];
     LinkedList<(Position position, int cost)> list = [];
     HashSet<Position> seen = [];
     list.AddLast((start, 0));
@@ -53,62 +48,41 @@ int navigate(HashSet<Position> grid, Position start, Position end)
         {
             if (seen.Contains(n))
                 continue;
-            if (grid.Contains(n))
+            if (obstacles.Contains(n))
                 continue;
             if (n == end)
                 return node.Value.cost + 1;
             seen.Add(n);
+            cost[n] = node.Value.cost + 1;
             list.AddLast((n, node.Value.cost + 1));
         }
     }
     return int.MaxValue;
 }
 
-
-int navigate2(HashSet<Position> grid, Position start, Position end, int start_cheating_at, out Position cstart, out Position cend)
+IEnumerable<Position> allwithinmanhattan(Position pos, int distance)
 {
-    cstart = (0, 0);
-    cend = (0, 0);
-    LinkedList<(Position position, int cost)> list = [];
-    HashSet<Position> seen = [];
-    list.AddLast((start, 0));
-    bool can_cheat = false;
-    int cheat_steps = 20;
-    for (var node = list.First; node != null; node = node.Next)
+    foreach (var rpos in relativeDistance(distance))
     {
-        if (start_cheating_at == 0)
-        {
-            can_cheat = true;
-            cstart = node.Value.position;
-        }
-        else
-            start_cheating_at--;
-        if (cheat_steps == 0)
-            can_cheat = false;
-
-        foreach (var n in neighbours(node.Value.position))
-        {
-            if (seen.Contains(n))
-                continue;
-            if (grid.Contains(n) && !can_cheat)
-            {
-                cheat_steps--;
-                continue;
-            }
-            if (!grid.Contains(n) && can_cheat)
-            {
-                can_cheat = false;
-                cend = n;
-            }
-            if (n == end)
-                return node.Value.cost + 1;
-            seen.Add(n);
-            list.AddLast((n, node.Value.cost + 1));
-        }
+        var npos = (pos.x + rpos.x, pos.y + rpos.y);
+        if (inRange(npos) && manhattan(pos, npos) <= distance)
+            yield return npos;
     }
-    return int.MaxValue;
+    yield break;
 }
 
+HashSet<Position> relativeDistance(int distance)
+{
+    HashSet<Position> result = [];
+    for (int y = (distance * -1); y <= distance; y++)
+    {
+        for (int x = (distance * -1); x <= distance; x++)
+        {
+            result.Add((x, y));
+        }
+    }
+    return result;
+}
 
 IEnumerable<Position> neighbours(Position pos)
 {
@@ -123,3 +97,5 @@ IEnumerable<Position> neighbours(Position pos)
 }
 
 bool inRange(Position pos) => (pos.x < max && pos.x >= 0 && pos.y < max && pos.y >= 0);
+
+int manhattan(Position pos1, Position pos2) => Math.Abs(pos1.x - pos2.x) + Math.Abs(pos1.y - pos2.y);
