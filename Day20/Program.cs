@@ -19,12 +19,10 @@ walkable[end] = initial_distance;
 
 Parallel.ForEach(walkable, cheat_start =>
 {
-    foreach (var cheat_end in allwithinmanhattan(cheat_start.Key, 20))
+    foreach (var cheat_end in walkable.Where(c_end => manhattan(c_end.Key, cheat_start.Key) <= 20 && c_end.Value > cheat_start.Value))
     {
-        int mdist = manhattan(cheat_end, cheat_start.Key);
-        if (!walkable.TryGetValue(cheat_end, out var cheat_end_cost))
-            continue;
-        int cost = (initial_distance - cheat_end_cost) + mdist + cheat_start.Value;
+        int mdist = manhattan(cheat_end.Key, cheat_start.Key);
+        int cost = (initial_distance - cheat_end.Value) + mdist + cheat_start.Value;
         if (cost <= aim_for)
         {
             if (mdist == 2)
@@ -58,30 +56,6 @@ int navigate(HashSet<Position> obstacles, Position start, Position end, out Dict
         }
     }
     return int.MaxValue;
-}
-
-IEnumerable<Position> allwithinmanhattan(Position pos, int distance)
-{
-    foreach (var rpos in relativeDistance(distance))
-    {
-        var npos = (pos.x + rpos.x, pos.y + rpos.y);
-        if (inRange(npos) && manhattan(pos, npos) <= distance)
-            yield return npos;
-    }
-    yield break;
-}
-
-HashSet<Position> relativeDistance(int distance)
-{
-    HashSet<Position> result = [];
-    for (int y = (distance * -1); y <= distance; y++)
-    {
-        for (int x = (distance * -1); x <= distance; x++)
-        {
-            result.Add((x, y));
-        }
-    }
-    return result;
 }
 
 IEnumerable<Position> neighbours(Position pos)
